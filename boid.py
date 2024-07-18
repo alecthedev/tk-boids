@@ -70,13 +70,13 @@ class Boid:
         self.angle = -90
         self.center = self.calc_center()
         self.velocity = Vector2(0, 0)
-        self.sight_range = 45
+        self.sight_range = 75
         self.max_speed = 5
         self.min_distance = 50
 
         self.adjustments = {
             "alignment": 1,
-            "cohesion": 0.1,
+            "cohesion": 1,
             "separation": 1,
             "randomness": 0.1,
         }
@@ -135,7 +135,7 @@ class Boid:
         if current_direction.cross(target_direction) < 0:
             angle = -angle
 
-        max_turn_angle = math.radians(5)
+        max_turn_angle = math.radians(3)
         if abs(angle) > max_turn_angle:
             angle = max_turn_angle if angle > 0 else -max_turn_angle
 
@@ -179,7 +179,7 @@ class Boid:
         # move toward center mass of local flock
         avg_x = sum(b.center.x for b in self.local_flock) / len(self.local_flock)
         avg_y = sum(b.center.y for b in self.local_flock) / len(self.local_flock)
-        move_vector = Vector2(avg_x, avg_y) - self.center
+        move_vector = (Vector2(avg_x, avg_y) - self.center).scale(0.09)
         return move_vector.scale(self.adjustments["cohesion"])
 
     def calc_separation(self):
@@ -189,7 +189,7 @@ class Boid:
             distance = self.center - b.center
             if distance.magnitude() < self.min_distance:
                 move_vector += distance / distance.magnitude()
-
+        move_vector.scale(2)
         return move_vector.scale(self.adjustments["separation"])
 
     def calc_all_adjustments(self):
@@ -198,9 +198,6 @@ class Boid:
         separation = self.calc_separation()
 
         adjustment_vector = (alignment + cohesion + separation).normalize()
-
-        if adjustment_vector.magnitude() < 0.5:
-            adjustment_vector = adjustment_vector.normalize().scale(0.5)
 
         return adjustment_vector
 
@@ -245,6 +242,8 @@ class BoidManager:
     def manage_flock(self, target_boid) -> list[Boid]:
         # return list of boids within target boids sight
         flock = target_boid.local_flock
+        if len(flock) >= 7:
+            return flock
         for b in self.boids:
             if b is not target_boid:
                 if target_boid.center.distance_to(b.center) <= target_boid.sight_range:
