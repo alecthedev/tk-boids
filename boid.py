@@ -70,15 +70,15 @@ class Boid:
         self.angle = -90
         self.center = self.calc_center()
         self.velocity = Vector2(0, 0)
-        self.sight_range = 150
+        self.sight_range = 45
         self.max_speed = 5
         self.min_distance = 50
 
         self.adjustments = {
-            "alignment": 5,
+            "alignment": 1,
             "cohesion": 0.1,
             "separation": 1,
-            "randomness": 0.5,
+            "randomness": 0.1,
         }
 
     def update(self):
@@ -141,9 +141,10 @@ class Boid:
 
         self.rotate(math.degrees(angle))
         self.angle += math.degrees(angle)
+        self.angle %= 360
 
     def move(self):
-        # self.velocity += self.random_velocity().scale(self.adjustments["randomness"])
+        self.velocity += self.random_velocity().scale(self.adjustments["randomness"])
 
         for vertex in self.vertices:
             vertex.x += self.velocity.x
@@ -153,6 +154,12 @@ class Boid:
 
         if self.velocity.magnitude() > self.max_speed:
             self.velocity = self.velocity.normalize().scale(self.max_speed)
+
+        if self.center.x > self.canvas.winfo_width() or self.center.x < 0:
+            self.wrap_x()
+
+        if self.center.y > self.canvas.winfo_height() or self.center.y < 0:
+            self.wrap_y()
 
     def initialize_velocity(self):
         while self.velocity == Vector2(0, 0):
@@ -197,6 +204,30 @@ class Boid:
 
         return adjustment_vector
 
+    def wrap_x(self):
+        canvas_width = self.canvas.winfo_width()
+        # teleport to left side of canvas
+        if self.center.x > canvas_width:
+            for v in self.vertices:
+                v.x -= canvas_width
+        # teleport to right side of canvas
+        else:
+            for v in self.vertices:
+                v.x += canvas_width
+        self.center = self.calc_center()
+
+    def wrap_y(self):
+        canvas_height = self.canvas.winfo_height()
+        # teleport to left side of canvas
+        if self.center.y > canvas_height:
+            for v in self.vertices:
+                v.y -= canvas_height
+        # teleport to right side of canvas
+        else:
+            for v in self.vertices:
+                v.y += canvas_height
+        self.center = self.calc_center()
+
 
 class BoidManager:
     def __init__(self, canvas: Canvas) -> None:
@@ -209,7 +240,7 @@ class BoidManager:
         for b in self.boids:
             b.local_flock = self.manage_flock(b)
             b.update()
-        self.canvas.after(15, self.update_boids)
+        self.canvas.after(10, self.update_boids)
 
     def manage_flock(self, target_boid) -> list[Boid]:
         # return list of boids within target boids sight
@@ -219,10 +250,10 @@ class BoidManager:
                 if target_boid.center.distance_to(b.center) <= target_boid.sight_range:
                     if b not in flock:
                         flock.append(b)
-                        print(f"added {b.tag} to {target_boid.tag}'s local flock")
+                        # print(f"added {b.tag} to {target_boid.tag}'s local flock")
                 elif b in flock:
                     flock.remove(b)
-                    print(f"removed {b.tag} from {target_boid.tag}'s local flock")
+                    # print(f"removed {b.tag} from {target_boid.tag}'s local flock")
         return flock
 
     def spawn_boid(self, event):
