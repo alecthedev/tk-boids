@@ -1,6 +1,6 @@
 import math
-from random import randint
-from tkinter import Canvas, EventType
+from random import randint, random, shuffle
+from tkinter import Canvas
 
 
 class Vector2:
@@ -72,8 +72,9 @@ class Boid:
         self.center = self.calc_center()
         self.velocity = Vector2(0, 0)
         self.sight_range = 55
-        self.max_speed = 5
+        self.max_speed = 2
         self.min_distance = 50
+        self.evading = False
 
         self.adjustments = {
             "alignment": 1,
@@ -227,11 +228,18 @@ class Boid:
                 v.y += canvas_height
         self.center = self.calc_center()
 
+    def evade(self, predator):
+        self.local_flock = []
+        self.velocity += predator.center / predator.center.magnitude()
+        self.move()
+
 
 class Predator(Boid):
     def __init__(self, origin: Vector2, canvas: Canvas, tag: str) -> None:
         super().__init__(origin, canvas, tag)
         self.color = "red"
+        self.max_speed = 5
+        self.min_distance = 125
 
 
 class BoidManager:
@@ -240,6 +248,8 @@ class BoidManager:
         self.boids = []
         self.predators = []
 
+        self.flock_max = 11
+
         self.canvas.bind("<Button-1>", self.spawn_boid)
         self.canvas.bind("<Button-3>", self.spawn_predator)
 
@@ -247,25 +257,34 @@ class BoidManager:
         for b in self.boids:
             b.local_flock = self.manage_flock(b)
             b.update()
-        for p in self.predators:
-            p.update()
+        for pred in self.predators:
+            self.manage_prey(pred)
+            pred.update()
         self.canvas.after(10, self.update_boids)
 
     def manage_flock(self, target_boid) -> list[Boid]:
         # return list of boids within target boids sight
         flock = target_boid.local_flock
-        if len(flock) >= 11:
+        if len(flock) >= self.flock_max:
             return flock
         for b in self.boids:
             if b is not target_boid:
                 if target_boid.center.distance_to(b.center) <= target_boid.sight_range:
-                    if b not in flock:
+                    if b not in flock and not b.evading:
                         flock.append(b)
                         # print(f"added {b.tag} to {target_boid.tag}'s local flock")
                 elif b in flock:
                     flock.remove(b)
                     # print(f"removed {b.tag} from {target_boid.tag}'s local flock")
         return flock
+
+    def manage_prey(self, predator):
+        for b in self.boids:
+            if (predator.center - b.center).magnitude() < predator.min_distance:
+                b.evading = True
+                b.evade(predator)
+            else:
+                b.evading = False
 
     def spawn_boid(self, event):
         new_boid = Boid(
