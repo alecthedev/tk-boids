@@ -1,6 +1,6 @@
 import math
 from random import randint
-from tkinter import Canvas
+from tkinter import Canvas, EventType
 
 
 class Vector2:
@@ -57,6 +57,7 @@ class Boid:
     def __init__(self, origin: Vector2, canvas: Canvas, tag: str) -> None:
         self.canvas = canvas
         self.tag = tag
+        self.color = "white"
 
         self.local_flock = []
 
@@ -70,7 +71,7 @@ class Boid:
         self.angle = -90
         self.center = self.calc_center()
         self.velocity = Vector2(0, 0)
-        self.sight_range = 75
+        self.sight_range = 55
         self.max_speed = 5
         self.min_distance = 50
 
@@ -104,7 +105,7 @@ class Boid:
             points.append(v.y)
 
         self.canvas.create_polygon(
-            *points, fill="white", outline="white", tags=(self.tag)
+            *points, fill=self.color, outline=self.color, tags=(self.tag)
         )
 
     def rotate(self, angle):
@@ -145,6 +146,7 @@ class Boid:
 
     def move(self):
         self.velocity += self.random_velocity().scale(self.adjustments["randomness"])
+        self.velocity.normalize().scale(2)
 
         for vertex in self.vertices:
             vertex.x += self.velocity.x
@@ -199,7 +201,7 @@ class Boid:
 
         adjustment_vector = (alignment + cohesion + separation).normalize()
 
-        return adjustment_vector
+        return adjustment_vector.scale(2)
 
     def wrap_x(self):
         canvas_width = self.canvas.winfo_width()
@@ -215,34 +217,44 @@ class Boid:
 
     def wrap_y(self):
         canvas_height = self.canvas.winfo_height()
-        # teleport to left side of canvas
+        # teleport to top of canvas
         if self.center.y > canvas_height:
             for v in self.vertices:
                 v.y -= canvas_height
-        # teleport to right side of canvas
+        # teleport to bottom of canvas
         else:
             for v in self.vertices:
                 v.y += canvas_height
         self.center = self.calc_center()
 
 
+class Predator(Boid):
+    def __init__(self, origin: Vector2, canvas: Canvas, tag: str) -> None:
+        super().__init__(origin, canvas, tag)
+        self.color = "red"
+
+
 class BoidManager:
     def __init__(self, canvas: Canvas) -> None:
         self.canvas = canvas
         self.boids = []
+        self.predators = []
 
         self.canvas.bind("<Button-1>", self.spawn_boid)
+        self.canvas.bind("<Button-3>", self.spawn_predator)
 
     def update_boids(self):
         for b in self.boids:
             b.local_flock = self.manage_flock(b)
             b.update()
+        for p in self.predators:
+            p.update()
         self.canvas.after(10, self.update_boids)
 
     def manage_flock(self, target_boid) -> list[Boid]:
         # return list of boids within target boids sight
         flock = target_boid.local_flock
-        if len(flock) >= 7:
+        if len(flock) >= 11:
             return flock
         for b in self.boids:
             if b is not target_boid:
@@ -261,3 +273,10 @@ class BoidManager:
         )
         self.boids.append(new_boid)
         print(f"{new_boid.tag} added")
+
+    def spawn_predator(self, event):
+        new_pred = Predator(
+            Vector2(event.x, event.y), self.canvas, f"predator_{len(self.predators)}"
+        )
+        self.predators.append(new_pred)
+        print(f"{new_pred.tag} added")
