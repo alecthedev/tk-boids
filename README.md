@@ -60,7 +60,7 @@ cd tk-boids
 
 #### 3. Tweaking Settings
 
-* Currently there is no UI for tweaking the strength of the adjusments boids make. Any playing around must be done in your editor.
+* Currently there is no UI for tweaking the strength of the adjustments boids make. Any playing around must be done in your editor.
 
 * In the boid.py file there is a dictionary in the Boid class called `self.adjustments` feel free to tweak these values to your liking. 
  
