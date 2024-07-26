@@ -4,7 +4,7 @@ A demonstration of emergent behavior in the form of flocking "bird-like objects"
 
 ![boids](https://github.com/user-attachments/assets/eb2ce641-41a7-444e-abef-149cc787b556)
 
-See the *Getting Started* section below if you would like to try the simulation out for yourself.
+See the *[Getting Started](https://github.com/alecthedev/tk-boids/edit/main/README.md#getting-started)* section below if you would like to try the simulation out for yourself.
 
 ## What's happening here?
 
