@@ -13,7 +13,6 @@ class BoidSimulation:
         self.boid_manager = None
 
         self.build_gui()
-        self.start_app()
 
     def build_gui(self):
         content = ttk.Frame(self.root)
@@ -41,6 +40,7 @@ if __name__ == "__main__":
 
     root = Tk()
     boid_sim = BoidSimulation(root)
+    boid_sim.start_app()
     root.mainloop()
 
     print("Exiting Program")

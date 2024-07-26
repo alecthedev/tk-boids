@@ -1,5 +1,5 @@
 import math
-from random import randint, random, shuffle
+from random import randint
 from tkinter import Canvas
 
 
@@ -230,7 +230,7 @@ class Boid:
 
     def evade(self, predator):
         self.local_flock = []
-        self.velocity += predator.center / predator.center.magnitude()
+        self.velocity += (predator.center / predator.center.magnitude()).normalize()
         self.move()
 
 
